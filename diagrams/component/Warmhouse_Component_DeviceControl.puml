@@ -1,0 +1,23 @@
+@startuml
+title Warmhouse Device Control Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(DeviceControl, "Device Control", "Go", "Manages device states and commands")
+  Container(Database, "Database", "MongoDB", "Device states and real-time data")
+}
+
+Container(DeviceControl, "Device Control", "Go") {
+  Component(DeviceStateManagerService, "Device State Manager Service", "Manages device states")
+  Component(DeviceCommandManagerService, "Device Command Manager Service", "Manages device commands")
+  Component(DeviceControlRepository, "Device Control Repository", "Data access logic")
+}
+
+Rel(DeviceCommandManagerService,DeviceStateManagerService,"Sync device state")
+Rel(DeviceStateManagerService,DeviceControlRepository,"Reads/Writes device states and commands")
+Rel(DeviceControlRepository,Database,"Reads/Writes device control data")
+
+@enduml

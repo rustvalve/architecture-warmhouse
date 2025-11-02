@@ -1,0 +1,82 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+title Warmhouse Container Diagram
+
+Person(Homeowner, "Homeowner", "Smart home owner")
+
+System_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(WebApplication, "Web Application", "React", "Web interface for smart home management")
+  Container(ApiGateway, "API Gateway", "Nginx", "Single entry point, request routing")
+  
+  System_Boundary(DeviceDomain, "Device Management Domain") {
+    Container(DeviceRegistry, "Device Registry Service", "Go", "Device registration")
+    ContainerDb(RegistryDb, "Registry DB", "PostgreSQL", "Device data")
+    
+    Container(DeviceControl, "Device Control Service", "Go", "Device management (commands)")
+    ContainerDb(ControlDb, "Control DB", "MongoDB", "Device states and real-time data")
+    
+    Container(DeviceIntegration, "Device Integration Service", "Go", "Integration with partner devices via various protocols")
+    
+    Container(AutomationEngine, "Automation Engine", "Go", "Automation scenario management")
+    ContainerDb(AutomationDb, "Automation DB", "PostgreSQL", "Scenarios")
+  }
+  
+  System_Boundary(MonitoringDomain, "Monitoring Domain") {
+    Container(TelemetryService, "Telemetry Service", "Go", "Device telemetry collection")
+    ContainerDb(TelemetryDb, "Telemetry DB", "ClickHouse", "Time-series metrics and analytics")
+    
+    Container(AnalyticsService, "Analytics Service", "Go", "Analytics and reporting")
+  }
+  
+  System_Boundary(IdentityDomain, "Identity Domain") {
+    Container(IdentityService, "Identity Service", "Go", "Authentication and authorization")
+    ContainerDb(IdentityDb, "Identity DB", "PostgreSQL", "User data")
+  }
+  
+  Container(EventBus, "Event Bus", "Apache Kafka", "Asynchronous communication between services")
+}
+
+System_Ext(HomeDevices, "Home Devices", "Smart devices at user's home:\n• Heating Controllers\n• Smart Lights\n• Gate Controllers\n• Temperature Sensors\n• Other smart devices")
+
+' User interactions
+Rel(Homeowner, WebApplication, "Manages home", "HTTPS")
+Rel(WebApplication, ApiGateway, "API calls", "JSON/HTTPS")
+
+' API Gateway to services
+Rel(ApiGateway, DeviceRegistry, "Device registration")
+Rel(ApiGateway, DeviceControl, "Control commands")
+Rel(ApiGateway, TelemetryService, "Telemetry requests")
+Rel(ApiGateway, AutomationEngine, "Scenario management")
+Rel(ApiGateway, AnalyticsService, "Report requests")
+Rel(ApiGateway, IdentityService, "Authentication")
+
+' Command flow (synchronous)
+Rel(DeviceControl, DeviceIntegration, "Execute command")
+
+' Direct integration with devices
+Rel(DeviceIntegration, HomeDevices, "Device control")
+Rel(HomeDevices, DeviceIntegration, "Telemetry & status")
+
+' Telemetry flow (asynchronous)
+Rel(DeviceIntegration, EventBus, "DeviceTelemetryReceived", "Async")
+Rel(DeviceControl, EventBus, "DeviceStateChanged", "Async")
+
+Rel(EventBus, TelemetryService, "Subscribe to events", "Async")
+Rel(EventBus, AutomationEngine, "Subscribe to events", "Async")
+Rel(EventBus, AnalyticsService, "Subscribe to events", "Async")
+
+' Automation triggering commands
+Rel(AutomationEngine, DeviceControl, "Trigger command")
+
+' Database connections
+Rel(DeviceRegistry, RegistryDb, "Reads/Writes", "SQL")
+Rel(DeviceControl, ControlDb, "Reads/Writes", "NoSQL")
+Rel(AutomationEngine, AutomationDb, "Reads/Writes", "SQL")
+Rel(TelemetryService, TelemetryDb, "Stores metrics", "SQL")
+Rel(AnalyticsService, TelemetryDb, "Reads analytics", "SQL")
+Rel(IdentityService, IdentityDb, "Reads/Writes", "SQL")
+
+SHOW_LEGEND()
+
+@enduml

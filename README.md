@@ -39,8 +39,8 @@
     - Контекст: регистрация пользователей
 - Домен: мониторинг температуры
   - Поддомен отслеживания температуры
-    - Конекст: получение данных от датчиков
-    - Конекст: ведение журнала изменения температуры
+    - Контекст: получение данных от датчиков
+    - Контекст: ведение журнала изменения температуры
   - Поддомен отчётности и аналитики
 
 ### **4. Проблемы монолитного решения**
@@ -57,19 +57,61 @@
 
 # Задание 2. Проектирование микросервисной архитектуры
 
-В этом задании вам нужно предоставить только диаграммы в модели C4. Мы не просим вас отдельно описывать получившиеся микросервисы и то, как вы определили взаимодействия между компонентами To-Be системы. Если вы правильно подготовите диаграммы C4, они и так это покажут.
+**Диаграмма контейнеров**
 
-**Диаграмма контейнеров (Containers)**
+![Диаграмма контейнеров](./diagrams/containers/Warmhouse_Containers.png)
 
-Добавьте диаграмму.
+**Диаграммы компонентов**
 
-**Диаграмма компонентов (Components)**
+<details>
+<summary>🔍 Показать диаграммы компонентов</summary>
 
-Добавьте диаграмму для каждого из выделенных микросервисов.
+### Device Registry Service
 
-**Диаграмма кода (Code)**
+![DeviceRegistry](./diagrams/component/Warmhouse_Component_DeviceRegistry.png)
 
-Добавьте одну диаграмму или несколько.
+### Device Control Service
+
+![DeviceControl](./diagrams/component/Warmhouse_Component_DeviceControl.png)
+
+### Device Integration Service
+
+![DeviceIntegration](./diagrams/component/Warmhouse_Component_DeviceIntegration.png)
+
+### Automation Engine
+
+![AutomationEngine](./diagrams/component/Warmhouse_Component_AutomationEngine.png)
+
+### Telemetry Service
+
+![TelemetryService](./diagrams/component/Warmhouse_Component_TelemetryService.png)
+
+### Analytics Service
+
+![AnalyticsService](./diagrams/component/Warmhouse_Component_AnalyticsService.png)
+
+### Identity Service
+
+![IdentityService](./diagrams/component/Warmhouse_Component_IdentityService.png)
+
+</details>
+
+**Диаграммы кода**
+
+<details>
+<summary>🔍 Показать диаграммы кода</summary>
+
+### Device Control Service - Code Level
+
+![DeviceControlCode](./diagrams/code/Warmhouse_Code_DeviceControl.png)
+
+**Архитектурные слои:**
+
+- **API Layer**: HTTP handlers, request/response DTOs
+- **Domain Layer**: Device entities, бизнес-логика, value objects
+- **Infrastructure Layer**: Репозитории, работа с MongoDB
+
+</details>
 
 # Задание 3. Разработка ER-диаграммы
 

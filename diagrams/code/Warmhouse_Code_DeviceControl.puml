@@ -1,0 +1,160 @@
+@startuml
+title Warmhouse Device Control Code Diagram
+
+top to bottom direction
+
+package "API Layer" {
+  class DeviceControlHandler {
+    -DeviceRepository deviceRepository
+    +CommandResponse handleSendCommand(CommandRequest request)
+    +StateResponse handleGetDeviceState(StateRequest request)
+    +DeviceListResponse handleListUserDevices(UserRequest request)
+  }
+  
+  class CommandRequest {
+    +String deviceId
+    +String command
+    +Map<String, Any> parameters
+    +String userId
+  }
+  
+  class CommandResponse {
+    +Bool success
+    +String message
+    +DeviceState newState
+  }
+}
+
+package "Domain Layer" {
+  class Result {
+    +Bool success
+    +String errorMessage
+    +Error error
+  }
+  
+  abstract class Device {
+    #String id
+    #String userId
+    #DeviceType deviceType
+    #DeviceState state
+    #Metadata metadata
+    +Result executeCommand(Command command)
+    +DeviceState getState()
+    +void updateState(DeviceState state)
+  }
+  
+  class HeatingDevice {
+    -Float targetTemperature
+    -Float currentTemperature
+    -HeatingMode mode
+    +Result executeCommand(Command command)
+    -Result setTemperature(Float temp)
+    -Result setMode(HeatingMode mode)
+  }
+  
+  class LightingDevice {
+    -Int brightness
+    -Color color
+    -Bool isOn
+    +Result executeCommand(Command command)
+    -Result setBrightness(Int level)
+    -Result setColor(Color color)
+    -Result turnOn()
+    -Result turnOff() 
+  }
+  
+  class GateDevice {
+    -GatePosition position
+    -LockStatus lockStatus
+    +Result executeCommand(Command command)
+    -Result open()
+    -Result close()
+    -Result lock()
+    -Result unlock()
+  }
+  
+  class Command {
+    +String commandId
+    +CommandType commandType
+    +Map<String, Any> parameters
+    +String userId
+  }
+  
+  class DeviceState {
+    +Bool isOnline
+    +Time lastUpdate
+    +Status status
+    +Map<String, Any> attributes
+  }
+  
+  enum Status {
+    ACTIVE
+    IDLE
+    ERROR
+    OFFLINE
+    UPDATING
+  }
+  
+  enum DeviceType {
+    HEATING
+    LIGHTING
+    GATE
+  }
+  
+  enum CommandType {
+    TURN_ON
+    TURN_OFF
+    SET_VALUE
+  }
+  
+  enum HeatingMode {
+    AUTO
+    MANUAL
+    OFF
+  }
+  
+  enum GatePosition {
+    OPEN
+    CLOSED
+  }
+  
+  enum LockStatus {
+    LOCKED
+    UNLOCKED
+  }
+  
+  class Metadata {
+    +String firmwareVersion
+    +String location
+    +Time installDate
+  }
+}
+
+package "Infrastructure Layer" {
+  interface DeviceRepository {
+    +Device findById(String id)
+    +[]Device findByUserId(String userId)
+    +Result save(Device device)
+    +Result update(Device device)
+    +Result delete(String id)
+  }
+}
+
+DeviceControlHandler --> DeviceRepository
+
+DeviceControlHandler --> Device
+DeviceControlHandler --> Command
+
+Device <|-- HeatingDevice
+Device <|-- LightingDevice
+Device <|-- GateDevice
+Device --> DeviceState
+Device --> DeviceType
+Device --> Metadata
+Command --> CommandType
+DeviceState --> Status
+HeatingDevice --> HeatingMode
+GateDevice --> GatePosition
+GateDevice --> LockStatus
+
+@enduml

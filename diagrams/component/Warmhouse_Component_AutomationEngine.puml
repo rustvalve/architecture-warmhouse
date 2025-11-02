@@ -1,0 +1,24 @@
+@startuml
+title Warmhouse Automation Engine Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(AutomationEngine, "Automation Engine", "Go", "Automation scenario management")
+  Container(Database, "Automation DB", "PostgreSQL", "Automation scenarios")
+  Container(DeviceControl, "Device Control Service", "Go", "Device management (commands)")
+}
+
+Container(AutomationEngine, "Automation Engine", "Go") {
+  Component(ScenariosManagerService, "Scenarios Manager Service", "Manages automation scenarios")
+  Component(ScenariosExecutorService, "Scenarios Executor Service", "Executes automation scenarios")
+  Component(ScenariosRepository, "Scenarios Repository", "Data access logic")
+}
+
+Rel(ScenariosManagerService,ScenariosRepository,"Reads/Writes automation scenarios")
+Rel(ScenariosRepository,Database,"Reads/Writes automation scenarios")
+Rel(ScenariosExecutorService,DeviceControl,"Trigger command")
+
+@enduml
