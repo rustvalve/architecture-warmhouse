@@ -406,14 +406,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                error: "Element not found"
-                message: "Element with id '550e8400-e29b-41d4-a716-446655440000' does not exist"
+                error: "Device not found"
+                message: "Device with id '550e8400-e29b-41d4-a716-446655440000' does not exist"
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/InternalServerError"
+              example:
+                error: "Internal server error"
+                message: "An unexpected error occurred. Please try again later"
+                timestamp: "2025-11-03T18:30:00Z"
       security:
         - bearerAuth: []
 
@@ -496,7 +500,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/InternalServerError"
+              example:
+                error: "Internal server error"
+                message: "An unexpected error occurred. Please try again later"
+                timestamp: "2025-11-03T18:30:00Z"
       security:
         - bearerAuth: []
 
@@ -829,6 +837,23 @@ components:
           type: string
           description: Error description
           example: "Device with id '550e8400-e29b-41d4-a716-446655440000' does not exist"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence time
+          example: "2025-11-03T18:30:00Z"
+
+    InternalServerError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "Internal server error"
+        message:
+          type: string
+          description: Generic error message
+          example: "An unexpected error occurred. Please try again later"
         timestamp:
           type: string
           format: date-time
