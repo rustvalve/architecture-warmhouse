@@ -1,0 +1,162 @@
+@startuml Warmhouse_ER_Diagram
+
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b>PK: x</b>
+!define foreign_key(x) <i>FK: x</i>
+
+hide methods
+hide stereotypes
+
+' Entities
+entity "User" as User {
+  primary_key(id) : UUID
+  --
+  name : VARCHAR(100)
+  email : VARCHAR(255)
+  password_hash : VARCHAR(255)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "House" as House {
+  primary_key(id) : UUID
+  --
+  foreign_key(user_id) : UUID
+  name : VARCHAR(100)
+  address : VARCHAR(255)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "Module" as Module {
+  primary_key(id) : UUID
+  --
+  foreign_key(house_id) : UUID
+  name : VARCHAR(100)
+  type : VARCHAR(50)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "Device" as Device {
+  primary_key(id) : UUID
+  --
+  foreign_key(module_id) : UUID
+  foreign_key(device_type_id) : UUID
+  serial_number : VARCHAR(100)
+  firmware_version : VARCHAR(50)
+  installation_date : DATE
+  status : VARCHAR(20)
+  metadata : JSONB
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "DeviceType" as DeviceType {
+  primary_key(id) : UUID
+  --
+  name : VARCHAR(100)
+  category : VARCHAR(50)
+  manufacturer : VARCHAR(100)
+  model : VARCHAR(100)
+  capabilities : JSONB
+  created_at : TIMESTAMP
+}
+
+entity "DeviceState" as DeviceState {
+  primary_key(device_id) : UUID
+  --
+  is_online : BOOLEAN
+  status : VARCHAR(20)
+  state_data : JSONB
+  updated_at : TIMESTAMP
+}
+
+entity "DeviceCommand" as DeviceCommand {
+  primary_key(id) : UUID
+  --
+  name : VARCHAR(50)
+  description : VARCHAR(255)
+  parameters : JSONB
+  created_at : TIMESTAMP
+}
+
+entity "DeviceTypeCommand" as DeviceTypeCommand {
+  primary_key(device_type_id) : UUID
+  primary_key(command_id) : UUID
+  --
+  created_at : TIMESTAMP
+}
+
+entity "Scenario" as Scenario {
+  primary_key(id) : UUID
+  --
+  foreign_key(home_id) : UUID
+  name : VARCHAR(100)
+  description : VARCHAR(255)
+  trigger_type : VARCHAR(50)
+  status : VARCHAR(20)
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "ScenarioStep" as ScenarioStep {
+  primary_key(id) : UUID
+  --
+  foreign_key(scenario_id) : UUID
+  foreign_key(device_id) : UUID
+  foreign_key(command_id) : UUID
+  name : VARCHAR(100)
+  parameters : JSONB
+  execution_order : INTEGER
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "TelemetryData" as TelemetryData {
+  primary_key(id) : UUID
+  --
+  foreign_key(device_id) : UUID
+  data : JSONB
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "DeviceEvent" as DeviceEvent {
+  primary_key(id) : UUID
+  --
+  foreign_key(device_id) : UUID
+  event_type : VARCHAR(100)
+  event_data : JSONB
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "DeviceRegistrationEvent" as DeviceRegistrationEvent {
+  primary_key(id) : UUID
+  --
+  foreign_key(device_id) : UUID
+  event_type : VARCHAR(100)
+  event_data : JSONB
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+' Relationships
+User ||--o{ House : "owns"
+House ||--o{ Module : "owns"
+Module ||--o{ Device : "owns"
+DeviceType ||--o{ Device : "has"
+DeviceType ||--o{ DeviceTypeCommand : "has"
+DeviceCommand ||--o{ DeviceTypeCommand : "has"
+Device ||--|| DeviceState : "has"
+House ||--o{ Scenario : "has"
+Scenario ||--o{ ScenarioStep : "has"
+Device ||--o{ ScenarioStep : "target"
+DeviceCommand ||--o{ ScenarioStep : "used in"
+Device ||--o{ TelemetryData : "generates"
+Device ||--o{ DeviceEvent : "has"
+Device ||--o{ DeviceRegistrationEvent : "has"
+
+@enduml
+

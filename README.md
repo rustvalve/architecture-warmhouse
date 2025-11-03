@@ -105,17 +105,16 @@
 
 ![DeviceControlCode](./diagrams/code/Warmhouse_Code_DeviceControl.png)
 
-**Архитектурные слои:**
-
-- **API Layer**: HTTP handlers, request/response DTOs
-- **Domain Layer**: Device entities, бизнес-логика, value objects
-- **Infrastructure Layer**: Репозитории, работа с MongoDB
-
 </details>
 
 # Задание 3. Разработка ER-диаграммы
 
-Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
+<details>
+<summary>🔍 Показать ER диаграмму</summary>
+
+![ERDiagram](./diagrams/er/Warmhouse_ER_Diagram.png)
+
+</details>
 
 # Задание 4. Создание и документирование API
 
