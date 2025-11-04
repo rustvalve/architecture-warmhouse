@@ -33,12 +33,30 @@ app.get("/temperature", (req: Request, res: Response) => {
 app.get("/temperature/:id", (req: Request, res: Response) => {
   const sensorId = req.params.id;
   const temperature = Math.floor(Math.random() * 16) + 15;
+  let location = req.query.location;
+
+  if (!location) {
+    switch (sensorId) {
+      case "1":
+        location = "Living Room";
+        break;
+      case "2":
+        location = "Bedroom";
+        break;
+      case "3":
+        location = "Kitchen";
+        break;
+      default:
+        location = "Unknown";
+        break;
+    }
+  }
 
   res.json({
     value: temperature,
     unit: "°C",
     timestamp: new Date().toISOString(),
-    location: `sensor_${sensorId}_location`,
+    location: location,
     status: "active",
     sensor_id: sensorId,
     sensor_type: "temperature",
