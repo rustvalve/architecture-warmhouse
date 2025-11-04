@@ -1,0 +1,308 @@
+openapi: 3.0.3
+info:
+  title: Device Registry Service API
+  description: |
+    API for device registration and cataloging in Warmhouse smart home system.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Development server
+  - url: https://registry.warmhouse.com/v1
+    description: Production server
+
+tags:
+  - name: Registry
+    description: Device registration and catalog management
+
+paths:
+  /devices:
+    post:
+      tags:
+        - Registry
+      summary: Register new device
+      description: Registers a new device in the system.
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterDeviceRequest"
+            example:
+              moduleId: "660f9511-f30c-52e5-b827-557766551111"
+              deviceTypeId: "type-thermostat"
+              serialNumber: "SN-THERMO-12345"
+              firmwareVersion: "2.1.5"
+      responses:
+        "201":
+          description: Device successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceRegistered"
+              example:
+                deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                moduleId: "660f9511-f30c-52e5-b827-557766551111"
+                deviceTypeId: "type-thermostat"
+                serialNumber: "SN-THERMO-12345"
+                status: "ACTIVE"
+                createdAt: "2025-11-03T18:30:00Z"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Invalid request"
+                message: "Serial number already exists"
+        "404":
+          description: Module or DeviceType not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - bearerAuth: []
+
+    get:
+      tags:
+        - Registry
+      summary: Get device list
+      description: Returns list of all user devices
+      operationId: listDevices
+      parameters:
+        - name: homeId
+          in: query
+          description: Filter by home
+          schema:
+            type: string
+            format: uuid
+        - name: moduleId
+          in: query
+          description: Filter by module (room)
+          schema:
+            type: string
+            format: uuid
+        - name: deviceType
+          in: query
+          description: Filter by device type
+          schema:
+            type: string
+            enum: [HEATING, LIGHTING, GATE]
+      responses:
+        "200":
+          description: Device list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Device"
+              example:
+                - deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                  moduleId: "660f9511-f30c-52e5-b827-557766551111"
+                  deviceTypeId: "type-thermostat"
+                  serialNumber: "SN-THERMO-12345"
+                  deviceType: "HEATING"
+                  manufacturer: "Bosch"
+                  model: "EasyControl CT200"
+                  status: "ACTIVE"
+                  createdAt: "2025-11-03T18:30:00Z"
+                - deviceId: "770f9622-g40d-63f6-c938-668877662222"
+                  moduleId: "660f9511-f30c-52e5-b827-557766551111"
+                  deviceTypeId: "type-light"
+                  serialNumber: "SN-LIGHT-67890"
+                  deviceType: "LIGHTING"
+                  manufacturer: "Philips Hue"
+                  model: "White and Color"
+                  status: "ACTIVE"
+                  createdAt: "2025-11-03T19:00:00Z"
+      security:
+        - bearerAuth: []
+
+  /devices/{deviceId}:
+    get:
+      tags:
+        - Registry
+      summary: Get device information
+      description: Returns detailed device information from catalog
+      operationId: getDevice
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Device information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "404":
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - Registry
+      summary: Delete device
+      description: Deletes device from system (soft delete)
+      operationId: deleteDevice
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Device successfully deleted
+        "404":
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    RegisterDeviceRequest:
+      type: object
+      required:
+        - moduleId
+        - deviceTypeId
+        - serialNumber
+      properties:
+        moduleId:
+          type: string
+          format: uuid
+          description: UUID of module (room) to which device is attached
+          example: "660f9511-f30c-52e5-b827-557766551111"
+        deviceTypeId:
+          type: string
+          description: Device type ID
+          example: "type-thermostat"
+        serialNumber:
+          type: string
+          description: Device serial number
+          example: "SN-THERMO-12345"
+        firmwareVersion:
+          type: string
+          description: Firmware version
+          example: "2.1.5"
+        metadata:
+          type: object
+          description: Additional device metadata
+          additionalProperties: true
+          example:
+            protocol: "MQTT"
+            endpoint: "mqtt://192.168.1.100"
+
+    DeviceRegistered:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: UUID of registered device
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        moduleId:
+          type: string
+          format: uuid
+          example: "660f9511-f30c-52e5-b827-557766551111"
+        deviceTypeId:
+          type: string
+          example: "type-thermostat"
+        serialNumber:
+          type: string
+          example: "SN-THERMO-12345"
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+          example: "ACTIVE"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-03T18:30:00Z"
+
+    Device:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        moduleId:
+          type: string
+          format: uuid
+          example: "660f9511-f30c-52e5-b827-557766551111"
+        deviceTypeId:
+          type: string
+          example: "type-thermostat"
+        serialNumber:
+          type: string
+          example: "SN-THERMO-12345"
+        deviceType:
+          type: string
+          enum: [HEATING, LIGHTING, GATE]
+          example: "HEATING"
+        manufacturer:
+          type: string
+          example: "Bosch"
+        model:
+          type: string
+          example: "EasyControl CT200"
+        firmwareVersion:
+          type: string
+          example: "2.1.5"
+        status:
+          type: string
+          enum: [ACTIVE, DELETED, DISABLED]
+          example: "ACTIVE"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-03T18:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-03T18:30:00Z"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "Device not found"
+        message:
+          type: string
+          description: Error description
+          example: "Device with id '550e8400-e29b-41d4-a716-446655440000' does not exist"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence time
+          example: "2025-11-03T18:30:00Z"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token is used for authentication
+
+security:
+  - bearerAuth: []

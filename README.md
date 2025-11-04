@@ -127,7 +127,8 @@
 
 ### 2. Документация API
 
-[Документация API](./docs/api/microservices-api.yaml)
+- [Control Service API](./docs/api/control-service-api.yaml)
+- [Registry Service API](./docs/api/registry-service-api.yaml)
 
 # Задание 5. Работа с docker и docker-compose
 
