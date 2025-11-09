@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  description: |
+    API for collecting and retrieving device telemetry data in Warmhouse smart home system.
+    Service stores time-series metrics in ClickHouse for efficient analytics and reporting.
+  version: 1.0.0
+
+tags:
+  - name: Telemetry
+    description: Device telemetry data collection and retrieval
+
+paths:
+  /telemetry:
+    post:
+      tags:
+        - Telemetry
+      summary: Submit telemetry data
+      description: |
+        Submits telemetry data from devices.
+        This endpoint is typically used by Device Integration Service
+        to push telemetry received from physical devices.
+      operationId: submitTelemetry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelemetrySubmitRequest"
+            examples:
+              heatingTelemetry:
+                summary: Thermostat telemetry
+                value:
+                  deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                  data:
+                    currentTemperature: 21.5
+                    targetTemperature: 22
+                    humidity: 45
+                    mode: "AUTO"
+                    heatingActive: true
+              lightingTelemetry:
+                summary: Light bulb telemetry
+                value:
+                  deviceId: "660f9511-f30c-52e5-b827-557766551111"
+                  data:
+                    brightness: 80
+                    color: "#FFFFFF"
+                    isOn: true
+                    powerConsumption: 12.5
+              gateTelemetry:
+                summary: Gate telemetry
+                value:
+                  deviceId: "770f9622-g40d-63f6-c938-668877662222"
+                  data:
+                    position: "CLOSED"
+                    lockStatus: "LOCKED"
+                    batteryLevel: 85
+                    lastOpenTime: "2025-11-09T08:15:00Z"
+      responses:
+        "201":
+          description: Telemetry data submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetrySubmitResponse"
+              example:
+                success: true
+                message: "Telemetry data recorded"
+                recordId: "rec-550e8400-1699534200000"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Invalid request"
+                message: "Missing required field: deviceId"
+                timestamp: "2025-11-09T12:30:00Z"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+              example:
+                error: "Internal server error"
+                message: "Failed to store telemetry data"
+                timestamp: "2025-11-09T12:30:00Z"
+      security:
+        - bearerAuth: []
+
+    get:
+      tags:
+        - Telemetry
+      summary: Get device telemetry history
+      description: |
+        Retrieves historical telemetry data for a specific device within a time range.
+        Results are paginated and sorted by timestamp in descending order (newest first).
+      operationId: getTelemetry
+      parameters:
+        - name: deviceId
+          in: query
+          required: true
+          description: Device UUID
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        - name: from
+          in: query
+          required: true
+          description: Start timestamp (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-11-08T00:00:00Z"
+        - name: to
+          in: query
+          required: true
+          description: End timestamp (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2025-11-09T23:59:59Z"
+        - name: limit
+          in: query
+          description: Maximum number of records to return (default 100, max 1000)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          example: 100
+        - name: offset
+          in: query
+          description: Number of records to skip for pagination (default 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+      responses:
+        "200":
+          description: Telemetry data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryListResponse"
+              example:
+                deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                from: "2025-11-08T00:00:00Z"
+                to: "2025-11-09T23:59:59Z"
+                total: 1440
+                limit: 100
+                offset: 0
+                data:
+                  - createdAt: "2025-11-09T12:30:00Z"
+                    data:
+                      currentTemperature: 21.5
+                      targetTemperature: 22
+                      humidity: 45
+                      mode: "AUTO"
+                  - createdAt: "2025-11-09T12:29:00Z"
+                    data:
+                      currentTemperature: 21.4
+                      targetTemperature: 22
+                      humidity: 44
+                      mode: "AUTO"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Invalid request"
+                message: "Time range exceeds maximum allowed (30 days)"
+                timestamp: "2025-11-09T12:30:00Z"
+        "404":
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Device not found"
+                message: "No telemetry data found for device '550e8400-e29b-41d4-a716-446655440000'"
+                timestamp: "2025-11-09T12:30:00Z"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+              example:
+                error: "Internal server error"
+                message: "Failed to retrieve telemetry data"
+                timestamp: "2025-11-09T12:30:00Z"
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    TelemetrySubmitRequest:
+      type: object
+      required:
+        - deviceId
+        - data
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Device UUID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        data:
+          type: object
+          description: Device data (key-value pairs, device-type specific)
+          additionalProperties: true
+          example:
+            currentTemperature: 21.5
+            targetTemperature: 22
+            humidity: 45
+            mode: "AUTO"
+
+    TelemetrySubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Submission success
+          example: true
+        message:
+          type: string
+          description: Result message
+          example: "Telemetry data recorded"
+        recordId:
+          type: string
+          format: uuid
+          description: Unique record identifier (UUID)
+          example: "550e8400-e29b-41d4-a716-446655440001"
+
+    TelemetryListResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Device UUID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        from:
+          type: string
+          format: date-time
+          description: Start timestamp
+          example: "2025-11-08T00:00:00Z"
+        to:
+          type: string
+          format: date-time
+          description: End timestamp
+          example: "2025-11-09T23:59:59Z"
+        total:
+          type: integer
+          description: Total number of records matching criteria
+          example: 1440
+        limit:
+          type: integer
+          description: Limit applied to results
+          example: 100
+        offset:
+          type: integer
+          description: Offset applied to results
+          example: 0
+        data:
+          type: array
+          description: Telemetry data points
+          items:
+            $ref: "#/components/schemas/TelemetryDataPoint"
+
+    TelemetryDataPoint:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: Record creation timestamp
+          example: "2025-11-09T12:30:00Z"
+        data:
+          type: object
+          description: Device data at this timestamp
+          additionalProperties: true
+          example:
+            currentTemperature: 21.5
+            targetTemperature: 22
+            humidity: 45
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "Invalid request"
+        message:
+          type: string
+          description: Error description
+          example: "Missing required field: deviceId"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence time
+          example: "2025-11-09T12:30:00Z"
+
+    InternalServerError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "Internal server error"
+        message:
+          type: string
+          description: Generic error message
+          example: "An unexpected error occurred. Please try again later"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error occurrence time
+          example: "2025-11-09T12:30:00Z"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token is used for authentication
+
+security:
+  - bearerAuth: []

@@ -129,6 +129,9 @@
 
 - [Control Service API](./docs/api/control-service-api.yaml)
 - [Registry Service API](./docs/api/registry-service-api.yaml)
+- [Telemetry Service API](./docs/api/telemetry-service-api.yaml)
+
+На этапе MVP не будем реализовывать Registry Service, т.к. его функциональность выполняет монолит.
 
 # Задание 5. Работа с docker и docker-compose
 

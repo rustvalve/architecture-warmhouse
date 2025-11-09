@@ -2,7 +2,11 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { DeviceStatus, DeviceType } from 'src/modules/devices/types/types';
 
-export type DeviceDocument = Device & Document;
+export type DeviceDocument = Device &
+  Document & {
+    createdAt: Date;
+    updatedAt: Date;
+  };
 
 @Schema({ timestamps: true })
 export class Device {
@@ -23,9 +27,6 @@ export class Device {
 
   @Prop({ type: Object, default: {} })
   state: Record<string, any>;
-
-  @Prop()
-  lastUpdated: Date;
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device);

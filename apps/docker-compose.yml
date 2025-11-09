@@ -12,7 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./smart_home/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./smart_home/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./init-telemetry-db.sh:/docker-entrypoint-initdb.d/02-init-telemetry-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -71,15 +72,45 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      - MONGO_URI=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      - PORT=3000
+      - MONGO_URI=${MONGO_URI}
+      - PORT=8082
     ports:
-      - "3000:3000"
+      - "8082:8082"
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1",
+          "wget --no-verbose --tries=1 --spider http://localhost:8082/ || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+
+  telemetry-service:
+    build:
+      context: ./telemetry_service
+      dockerfile: Dockerfile
+    container_name: telemetry-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=telemetry
+      - PORT=8083
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8083/ || exit 1",
         ]
       interval: 10s
       timeout: 5s

@@ -1,8 +1,12 @@
-import { IsEnum, IsNotEmpty } from 'class-validator';
+import { IsEnum, IsObject, IsOptional } from 'class-validator';
 import { DeviceStatus } from 'src/modules/devices/types/types';
 
 export class UpdateDeviceDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(DeviceStatus)
-  status: DeviceStatus;
+  status?: DeviceStatus;
+
+  @IsObject()
+  @IsOptional()
+  state?: Record<string, any>;
 }

@@ -18,13 +18,22 @@ import (
 type SensorHandler struct {
 	DB                 *db.DB
 	TemperatureService *services.TemperatureService
+	ControlService     *services.ControlService
+	TelemetryService   *services.TelemetryService
 }
 
 // NewSensorHandler creates a new SensorHandler
-func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService) *SensorHandler {
+func NewSensorHandler(
+	db *db.DB, 
+	temperatureService *services.TemperatureService, 
+	controlService *services.ControlService, 
+	telemetryService *services.TelemetryService,
+) *SensorHandler {
 	return &SensorHandler{
 		DB:                 db,
 		TemperatureService: temperatureService,
+		ControlService:     controlService,
+		TelemetryService:   telemetryService,
 	}
 }
 
@@ -142,6 +151,13 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 		return
 	}
 
+	// Create device in Control Service
+	_, err = h.ControlService.CreateDevice(fmt.Sprintf("%d", sensor.ID), "HEATING", "1")
+	if err != nil {
+		// Log error but don't fail the request (device created in DB)
+		log.Printf("Warning: Failed to create device in Control Service: %v", err)
+	}
+
 	c.JSON(http.StatusCreated, sensor)
 }
 
@@ -165,6 +181,18 @@ func (h *SensorHandler) UpdateSensor(c *gin.Context) {
 		return
 	}
 
+	// Update device in Control Service
+	_, err = h.ControlService.UpdateDevice(fmt.Sprintf("%d", sensor.ID), map[string]interface{}{
+		"name": sensor.Name,
+		"value": sensor.Value,
+		"unit": sensor.Unit,
+		"location": sensor.Location,
+	})
+	if err != nil {
+		// Log error but don't fail the request (device updated in DB)
+		log.Printf("Warning: Failed to update device in Control Service: %v", err)
+	}
+
 	c.JSON(http.StatusOK, sensor)
 }
 
@@ -180,6 +208,13 @@ func (h *SensorHandler) DeleteSensor(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Delete device in Control Service
+	err = h.ControlService.DeleteDevice(fmt.Sprintf("%d", id))
+	if err != nil {
+		// Log error but don't fail the request (device deleted in DB)
+		log.Printf("Warning: Failed to delete device in Control Service: %v", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor deleted successfully"})
@@ -207,6 +242,23 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Update device in Control Service
+	_, err = h.ControlService.ExecuteCommand(fmt.Sprintf("%d", id), "SET_VALUE", request.Value)
+	if err != nil {
+		// Log error but don't fail the request (device updated in DB)
+		log.Printf("Warning: Failed to update device in Control Service: %v", err)
+	}
+
+	// Send telemetry data to Telemetry Service
+	_, err = h.TelemetryService.SubmitTelemetry(fmt.Sprintf("%d", id), map[string]interface{}{
+		"value": request.Value,
+		"status": request.Status,
+	})
+	if err == nil {
+		// Log error but don't fail the request (telemetry sent in DB)
+		log.Printf("Failed to send telemetry data to Telemetry Service: %v", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor value updated successfully"})

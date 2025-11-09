@@ -4,11 +4,6 @@ info:
   description: |
     API for device management and command execution in Warmhouse smart home system.
   version: 1.0.0
-servers:
-  - url: http://localhost:8082/api/v1
-    description: Development server
-  - url: https://control.warmhouse.com/v1
-    description: Production server
 
 tags:
   - name: Control
@@ -110,7 +105,7 @@ paths:
                       currentTemperature: 21.5
                       mode: "AUTO"
                       humidity: 45
-                    lastUpdate: "2025-11-03T18:30:00Z"
+                    updatedAt: "2025-11-03T18:30:00Z"
                 lightingDevice:
                   summary: Lighting
                   value:
@@ -122,7 +117,7 @@ paths:
                       brightness: 80
                       color: "#FFFFFF"
                       isOn: true
-                    lastUpdate: "2025-11-03T18:31:00Z"
+                    updatedAt: "2025-11-03T18:31:00Z"
                 gateDevice:
                   summary: Gate
                   value:
@@ -134,7 +129,7 @@ paths:
                       position: "CLOSED"
                       lockStatus: "LOCKED"
                       batteryLevel: 85
-                    lastUpdate: "2025-11-03T18:32:00Z"
+                    updatedAt: "2025-11-03T18:32:00Z"
         "404":
           description: Device not found
           content:
@@ -234,6 +229,47 @@ paths:
       security:
         - bearerAuth: []
 
+    delete:
+      tags:
+        - Control
+      summary: Delete device
+      description: |
+        Soft deletes device by setting status to DELETED and isOnline to false.
+        Device data is preserved in the database.
+      operationId: deleteDevice
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Device UUID
+          schema:
+            type: string
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "204":
+          description: Device successfully deleted
+        "404":
+          description: Device not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Device not found"
+                message: "Device with id '550e8400-e29b-41d4-a716-446655440000' does not exist"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalServerError"
+              example:
+                error: "Internal server error"
+                message: "An unexpected error occurred. Please try again later"
+                timestamp: "2025-11-03T18:30:00Z"
+      security:
+        - bearerAuth: []
+
   /devices/{deviceId}/command:
     post:
       tags:
@@ -245,10 +281,7 @@ paths:
         Supported command types:
         - `TURN_ON` - turn device on
         - `TURN_OFF` - turn device off
-        - `SET_TEMPERATURE` - set temperature (for thermostats)
-        - `SET_BRIGHTNESS` - set brightness (for lights)
-        - `OPEN` - open (for gates)
-        - `CLOSE` - close (for gates)
+        - `SET_VALUE` - set value (temperature, brightness, etc.)
       operationId: executeCommand
       parameters:
         - name: deviceId
@@ -270,19 +303,15 @@ paths:
                 summary: Turn device on
                 value:
                   command: "TURN_ON"
-                  parameters: {}
-              setTemperature:
-                summary: Set temperature
+              turnOff:
+                summary: Turn device off
                 value:
-                  command: "SET_TEMPERATURE"
-                  parameters:
-                    value: 22
-              setBrightness:
-                summary: Set brightness
+                  command: "TURN_OFF"
+              setValue:
+                summary: Set value
                 value:
-                  command: "SET_BRIGHTNESS"
-                  parameters:
-                    value: 80
+                  command: "SET_VALUE"
+                  value: 22
       responses:
         "200":
           description: Command executed successfully
@@ -298,7 +327,7 @@ paths:
                   isOnline: true
                   status: "ACTIVE"
                   temperature: 22
-                  lastUpdate: "2025-11-03T18:30:00Z"
+                  updatedAt: "2025-11-03T18:30:00Z"
         "400":
           description: Bad request
           content:
@@ -336,13 +365,17 @@ components:
       type: object
       required:
         - deviceId
+        - userId
         - deviceType
       properties:
         deviceId:
           type: string
-          format: uuid
           description: Device UUID from Registry Service
           example: "550e8400-e29b-41d4-a716-446655440000"
+        userId:
+          type: string
+          description: Owner user identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
         deviceType:
           type: string
           description: Device type
@@ -365,12 +398,31 @@ components:
           example: "Device created successfully"
         deviceId:
           type: string
-          format: uuid
           description: Device UUID
           example: "550e8400-e29b-41d4-a716-446655440000"
+        userId:
+          type: string
+          description: Owner user identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        deviceType:
+          type: string
+          description: Device type
+          enum:
+            - HEATING
+            - LIGHTING
+            - GATE
+          example: "HEATING"
         status:
           type: string
           description: Initial device status
+          enum:
+            - ACTIVE
+            - IDLE
+            - ERROR
+            - OFFLINE
+            - UPDATING
+            - DELETED
+            - DISABLED
           example: "ACTIVE"
         isOnline:
           type: boolean
@@ -393,20 +445,12 @@ components:
           enum:
             - TURN_ON
             - TURN_OFF
-            - SET_TEMPERATURE
-            - SET_BRIGHTNESS
-            - SET_COLOR
-            - OPEN
-            - CLOSE
-            - LOCK
-            - UNLOCK
-          example: "TURN_ON"
-        parameters:
-          type: object
-          description: Command parameters (depends on command type)
-          additionalProperties: true
-          example:
-            value: 22
+            - SET_VALUE
+          example: "SET_VALUE"
+        value:
+          type: number
+          description: Value for SET_VALUE command (optional)
+          example: 22
 
     CommandResponse:
       type: object
@@ -458,6 +502,8 @@ components:
             - ERROR
             - OFFLINE
             - UPDATING
+            - DELETED
+            - DISABLED
           example: "ACTIVE"
         state:
           type: object
@@ -467,7 +513,7 @@ components:
             targetTemperature: 22
             currentTemperature: 21.5
             mode: "AUTO"
-        lastUpdate:
+        updatedAt:
           type: string
           format: date-time
           description: Last state update time
@@ -478,12 +524,22 @@ components:
       properties:
         status:
           type: string
-          description: Device status
+          description: Device status (optional)
           enum:
             - ACTIVE
+            - IDLE
+            - ERROR
+            - OFFLINE
+            - UPDATING
             - DELETED
             - DISABLED
           example: "DELETED"
+        state:
+          type: object
+          description: Device state (optional)
+          additionalProperties: true
+          example:
+            targetTemperature: 22
 
     UpdateDeviceResponse:
       type: object
@@ -498,7 +554,6 @@ components:
           example: "Device updated successfully"
         deviceId:
           type: string
-          format: uuid
           description: Device UUID
           example: "550e8400-e29b-41d4-a716-446655440000"
         status:
@@ -506,6 +561,10 @@ components:
           description: Updated device status
           enum:
             - ACTIVE
+            - IDLE
+            - ERROR
+            - OFFLINE
+            - UPDATING
             - DELETED
             - DISABLED
           example: "DELETED"

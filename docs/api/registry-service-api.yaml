@@ -4,11 +4,6 @@ info:
   description: |
     API for device registration and cataloging in Warmhouse smart home system.
   version: 1.0.0
-servers:
-  - url: http://localhost:8081/api/v1
-    description: Development server
-  - url: https://registry.warmhouse.com/v1
-    description: Production server
 
 tags:
   - name: Registry

@@ -3,15 +3,16 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { DevicesService } from './devices.service';
-import { CommandRequestDto } from './dto/command-request.dto';
-import { UpdateDeviceDto } from './dto/update-device.dto';
-import { CreateDeviceDto } from './dto/create-device.dto';
+import { DevicesService } from 'src/modules/devices/devices.service';
+import { CommandRequestDto } from 'src/modules/devices/dto/command-request.dto';
+import { UpdateDeviceDto } from 'src/modules/devices/dto/update-device.dto';
+import { CreateDeviceDto } from 'src/modules/devices/dto/create-device.dto';
 
 @Controller('devices')
 export class DevicesController {
@@ -43,5 +44,11 @@ export class DevicesController {
     @Body() commandRequestDto: CommandRequestDto,
   ) {
     return this.devicesService.executeCommand(deviceId, commandRequestDto);
+  }
+
+  @Delete(':deviceId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteDevice(@Param('deviceId') deviceId: string): Promise<void> {
+    await this.devicesService.deleteDevice(deviceId);
   }
 }

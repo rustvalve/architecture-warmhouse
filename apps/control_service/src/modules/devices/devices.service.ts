@@ -36,10 +36,9 @@ export class DevicesService {
     const device = new this.deviceModel({
       deviceId: createDeviceDto.deviceId,
       deviceType: createDeviceDto.deviceType,
-      status: DeviceStatus.OFFLINE,
+      status: DeviceStatus.ACTIVE,
       userId: createDeviceDto.userId,
       state: {},
-      lastUpdated: new Date(),
     });
 
     const savedDevice = await device.save();
@@ -67,7 +66,7 @@ export class DevicesService {
       deviceType: device.deviceType,
       status: device.status,
       state: device.state,
-      lastUpdate: device.lastUpdated,
+      updatedAt: device.updatedAt,
     };
   }
 
@@ -85,7 +84,9 @@ export class DevicesService {
       device.status = updateDeviceDto.status;
     }
 
-    device.lastUpdated = new Date();
+    if (updateDeviceDto.state) {
+      device.state = updateDeviceDto.state;
+    }
 
     await device.save();
 
@@ -94,7 +95,7 @@ export class DevicesService {
       deviceType: device.deviceType,
       status: device.status,
       state: device.state,
-      lastUpdate: device.lastUpdated,
+      updatedAt: device.updatedAt,
     };
   }
 
@@ -139,14 +140,30 @@ export class DevicesService {
         break;
     }
 
-    device.lastUpdated = new Date();
-
     await device.save();
 
     return {
       success: true,
       message: `Command ${commandRequestDto.command} executed successfully`,
       status: device.status,
+    };
+  }
+
+  async deleteDevice(
+    deviceId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const device = await this.deviceModel.findOne({ deviceId }).exec();
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    device.status = DeviceStatus.DELETED;
+    await device.save();
+
+    return {
+      success: true,
+      message: 'Device deleted successfully',
     };
   }
 }

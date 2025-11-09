@@ -5,5 +5,5 @@ export class DeviceStatusDto {
   deviceType: DeviceType;
   status: DeviceStatus;
   state: Record<string, any>;
-  lastUpdate: Date;
+  updatedAt: Date;
 }

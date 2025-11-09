@@ -20,7 +20,6 @@ RUN npm ci --only=production
 
 COPY --from=builder /app/dist ./dist
 
-EXPOSE 8082
+EXPOSE 8083
 
 CMD ["node", "dist/main"]
-
