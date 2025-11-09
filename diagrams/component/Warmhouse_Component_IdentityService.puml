@@ -1,0 +1,21 @@
+@startuml
+title Warmhouse Identity Service Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(IdentityService, "Identity Service", "Go", "Authentication and authorization")
+  Container(Database, "Identity DB", "PostgreSQL", "User data")
+}
+
+Container(IdentityService, "Identity Service", "Go") {
+  Component(ServiceLayer, "Service Layer", "Processes identity data")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+Rel(ServiceLayer,RepositoryLayer,"Processes identity data")
+Rel(RepositoryLayer,Database,"Reads/Writes identity data")
+
+@enduml

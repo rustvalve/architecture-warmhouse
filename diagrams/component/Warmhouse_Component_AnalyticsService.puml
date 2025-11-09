@@ -1,0 +1,21 @@
+@startuml
+title Warmhouse Analytics Service Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(AnalyticsService, "Analytics Service", "Go", "Analytics and reporting")
+  Container(Database, "Telemetry DB", "ClickHouse", "Time-series metrics and analytics")
+}
+
+Container(AnalyticsService, "Analytics Service", "Go") {
+  Component(ServiceLayer, "Service Layer", "Processes analytics data")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+Rel(ServiceLayer,RepositoryLayer,"Processes analytics data")
+Rel(RepositoryLayer,Database,"Reads analytics data")
+
+@enduml

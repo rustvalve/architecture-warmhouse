@@ -1,0 +1,23 @@
+@startuml
+title Warmhouse Telemetry Service Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container_Boundary(WarmhouseSystem, "Warmhouse System") {
+  Container(TelemetryService, "Telemetry Service", "Go", "Device telemetry collection")
+  Container(Database, "Telemetry DB", "ClickHouse", "Time-series metrics and analytics")
+}
+
+Container(TelemetryService, "Telemetry Service", "Go") {
+  Component(TelemetryCollector, "Telemetry Collector", "Collects telemetry from devices")
+  Component(ServiceLayer, "Service Layer", "Processes telemetry data")
+  Component(RepositoryLayer, "Repository Layer", "Data access logic")
+}
+
+Rel(TelemetryCollector,ServiceLayer,"Collects telemetry from devices")
+Rel(ServiceLayer,RepositoryLayer,"Processes telemetry data")
+Rel(RepositoryLayer,Database,"Reads/Writes telemetry data")
+
+@enduml
